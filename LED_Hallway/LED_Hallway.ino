@@ -13,15 +13,15 @@ int front_pir_pin = 6;               // choose the input pin (for PIR sensor)
 int front_pir_state = LOW;             // we start, assuming no motion detected
 
 const int switch_pin = 7;
-const int switch_thresh = 865;    
+const int switch_thresh = 1000;    
 int switch_state = LOW;
 
 const int button_pin = A0;
 const int button_thresh = 950;    
 int button_mode = 0;
 
-uint32_t warm_white = pixels.Color(220, 110, 50);
-uint32_t daylight = pixels.Color(80, 100, 100);
+uint32_t warm_white = pixels.Color(255, 100, 30);
+uint32_t daylight = pixels.Color(255, 255, 255);
 
 ////////////////////////////////////////////////////////////
 
@@ -54,7 +54,7 @@ void loop(){
   Serial.print(" | ");
 
   // Read from switch
-  read_switch();
+  switch_state = read_switch();
   if (switch_state == HIGH){
     flip_the_switch(color_from_mode);
   }
@@ -78,20 +78,42 @@ void loop(){
 
 ////////////////////////////////////////////////////////////
 
+void flip_the_switch(uint32_t color_from_mode){
+  
+  for (int i = 0; i <= NUMPIXELS; i++) {
+    pixels.setPixelColor(i, color_from_mode);
+  }
+  pixels.show();
+  
+  Serial.println("\nWHOA THERE COWBOY \nDON'T FORGET TO FLIP THOSE SUCKERS BACK OFF\n");
+    
+  // Keep lights on until switch is off
+    
+  int current_mode = button_mode;
+  while(switch_state == HIGH){
+    switch_state = read_switch();
+  }
+  pixels.clear(); pixels.show();
+  delay(2000);
+  return;
+}
+
+////////////////////////////////////////////////////////////
+
 uint32_t read_button() {
   
   int average = 0;
   int readings = 10;
   
   for (int i=0; i < readings; i++) {
-    average += analogRead(button_pin);
+    average += digitalRead(button_pin);
   }
   average = (average/readings);
   Serial.print(" | Button average: ");
   Serial.print(average);
   Serial.print(" | ");
   
-  if (average > button_thresh) {
+  if (average == HIGH) {
     button_mode += 1;
     button_mode = button_mode % 2;
     delay(200);
@@ -112,7 +134,7 @@ uint32_t read_button() {
 int read_switch() {
   
   int average = 0;
-  int readings = 15;
+  int readings = 10;
   
   for (int i=0; i < readings; i++) {
     average += digitalRead(switch_pin);
@@ -120,36 +142,7 @@ int read_switch() {
   average = average/readings;
   Serial.print("Switch average: ");
   Serial.print(average);
-  if (average < switch_thresh) {
-    switch_state = LOW;
-      return 0;
-  }
-  else {
-    switch_state = HIGH;
-    return 1;
-  }
-  
-}
-
-////////////////////////////////////////////////////////////
-
-void flip_the_switch(int color_from_mode){
-  
-  for (int i = 0; i <= NUMPIXELS; i++) {
-    pixels.setPixelColor(i, color_from_mode);
-  }
-  pixels.show();
-  Serial.println("\nWHOA THERE COWBOY \nDON'T FORGET TO FLIP THOSE SUCKERS BACK OFF\n");
-    
-  // Keep lights on until switch is off
-    
-  int current_mode = button_mode;
-  while(switch_state == HIGH){
-    read_switch();
-  }
-  pixels.clear(); pixels.show();
-  delay(2000);
-  return;
+  return average;
 }
 
 ////////////////////////////////////////////////////////////
