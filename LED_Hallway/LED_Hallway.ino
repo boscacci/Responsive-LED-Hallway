@@ -7,10 +7,13 @@ int led_pin = 13;                // choose the pin for the LED
 
 int rob_pir_pin = 9;               // choose the input pin (for PIR sensor)
 int rob_pir_state = LOW;             // we start, assuming no motion detected
-int rob_position = 450;
+int rob_position = 0;
+int rob_duration = 5;
 
 int front_pir_pin = 6;               // choose the input pin (for PIR sensor)
 int front_pir_state = LOW;             // we start, assuming no motion detected
+int front_position = 225;
+int front_duration = 2;
 
 const int switch_pin = 7;
 const int switch_thresh = 1000;    
@@ -21,7 +24,7 @@ const int button_thresh = 950;
 int button_mode = 0;
 
 uint32_t warm_white = pixels.Color(255, 100, 30);
-uint32_t daylight = pixels.Color(255, 255, 255);
+uint32_t daylight = pixels.Color(200, 200, 200);
 
 ////////////////////////////////////////////////////////////
 
@@ -35,7 +38,7 @@ void setup() {
    
   pixels.begin();           // INITIALIZE NeoPixel pixels object (REQUIRED)
   pixels.show();            // Turn OFF all pixels ASAP
-  pixels.setBrightness(30); // Set BRIGHTNESS to about 1/5 (max = 255)
+  pixels.setBrightness(15); // Set BRIGHTNESS to about 1/5 (max = 255)
   Serial.begin(9600);
 }
 
@@ -59,20 +62,36 @@ void loop(){
     flip_the_switch(color_from_mode);
   }
 
-  // Check motion sensors
+  // Check motion sensor 0
   rob_pir_state = digitalRead(rob_pir_pin);
   if (rob_pir_state == HIGH){
-    Serial.println("\n\nROB IS MOVING\n\n");
-    light_up_from(rob_position, color_from_mode);
-    delay(3000);
+    light_up_and_monitor(rob_pir_pin, rob_position, color_from_mode, rob_duration);
   }
 
-  // Check motion sensors
+  // Check motion sensor 1
   front_pir_state = digitalRead(front_pir_pin);
   if (front_pir_state == HIGH){
-    Serial.println("INTRUDER ALERT INTRUDER ALERT");
-    light_up_from(200, color_from_mode);
-    delay(3000);
+    light_up_and_monitor(front_pir_pin, front_position, color_from_mode, front_duration);
+  }
+}
+
+////////////////////////////////////////////////////////////
+
+void light_up_and_monitor(int pir_pin, 
+                          int pixel_position, 
+                          uint32_t color_from_mode,
+                          int duration){
+  Serial.println("\n\n"); Serial.print(pir_pin); Serial.print(" IS MOVING\n\n");
+  light_up_from(pixel_position, color_from_mode);
+  int trip_event = millis();
+  uint32_t current_color = color_from_mode; // Save current color val before loop
+  int now = millis();
+  while ((now - trip_event) < (duration * 1000)){
+    color_from_mode = read_button();
+    if (current_color != color_from_mode){
+      return;
+      }
+    now = millis();
   }
 }
 
@@ -85,16 +104,19 @@ void flip_the_switch(uint32_t color_from_mode){
   }
   pixels.show();
   
-  Serial.println("\nWHOA THERE COWBOY \nDON'T FORGET TO FLIP THOSE SUCKERS BACK OFF\n");
-    
-  // Keep lights on until switch is off
-    
-  int current_mode = button_mode;
+  Serial.println("\n\nWHOA THERE COWBOY! \nDON'T FORGET TO FLIP THOSE SUCKERS BACK OFF\n");
+
+  uint32_t current_color = color_from_mode; // Save current color val before loop
   while(switch_state == HIGH){
+    color_from_mode = read_button();
+    if (current_color != color_from_mode){
+      return;
+    }
+    Serial.print("\n");
     switch_state = read_switch();
   }
   pixels.clear(); pixels.show();
-  delay(2000);
+//  delay(2000);
   return;
 }
 
