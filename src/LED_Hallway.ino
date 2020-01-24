@@ -1,3 +1,5 @@
+// Controls the LED's in our entrance hallway
+
 #include <Adafruit_NeoPixel.h>
 #define NUMPIXELS 1500
 #define STRIP_PIN    50
