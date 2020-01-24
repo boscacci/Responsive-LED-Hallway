@@ -1,22 +1,22 @@
 #include <Adafruit_NeoPixel.h>
-#define NUMPIXELS 450
-#define STRIP_PIN    3
+#define NUMPIXELS 1500
+#define STRIP_PIN    50
+int jump_size = 10;
 Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
 int led_pin = 13;                // choose the pin for the LED
 
-int rob_pir_pin = 9;               // choose the input pin (for PIR sensor)
+int rob_pir_pin = 31;               // choose the input pin (for PIR sensor)
 int rob_pir_state = LOW;             // we start, assuming no motion detected
-int rob_position = 0;
+int rob_position = 100;
 int rob_duration = 5;
 
-int front_pir_pin = 6;               // choose the input pin (for PIR sensor)
+int front_pir_pin = 42;               // choose the input pin (for PIR sensor)
 int front_pir_state = LOW;             // we start, assuming no motion detected
-int front_position = 225;
+int front_position = 1000;
 int front_duration = 2;
 
-const int switch_pin = 7;
-const int switch_thresh = 1000;    
+const int switch_pin = 30;
 int switch_state = LOW;
 
 const int button_pin = A0;
@@ -170,13 +170,14 @@ int read_switch() {
 ////////////////////////////////////////////////////////////
 
 void light_up_from(int start_pos, uint32_t color_from_mode){
-    for (int i = 0; i <= NUMPIXELS; i+=3) {
-      pixels.setPixelColor(start_pos + i, color_from_mode);
-      pixels.setPixelColor(start_pos + i+1, color_from_mode);
-      pixels.setPixelColor(start_pos + i+2, color_from_mode);
-      pixels.setPixelColor(start_pos - i-1, color_from_mode);
-      pixels.setPixelColor(start_pos - i-2, color_from_mode);
-      pixels.setPixelColor(start_pos - i-3, color_from_mode);
+    for (int i = 0; i <= NUMPIXELS; i = i+jump_size) {
+      for (int j = 0-jump_size; j <= jump_size; j++){
+        pixels.setPixelColor(start_pos + i + j, color_from_mode);
+        pixels.setPixelColor(start_pos - i + j, color_from_mode);
+      };
+//      pixels.setPixelColor(start_pos - i-3, color_from_mode);
+//      pixels.setPixelColor(start_pos + i, color_from_mode);
+//      pixels.setPixelColor(start_pos + i+2, color_from_mode);      
       pixels.show();
     }
 }
