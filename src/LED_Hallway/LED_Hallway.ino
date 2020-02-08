@@ -10,7 +10,7 @@ int led_pin = 13;                // choose the pin for the LED
 
 int rob_pir_pin = 31;               // choose the input pin (for PIR sensor)
 int rob_pir_state = LOW;             // we start, assuming no motion detected
-int rob_position = 100;
+int rob_position = 1400;
 int rob_duration = 5;
 
 int front_pir_pin = 42;               // choose the input pin (for PIR sensor)
@@ -174,7 +174,7 @@ int read_switch() {
 void light_up_from(int start_pos, uint32_t color_from_mode){
     for (int i = 0; i <= NUMPIXELS; i = i+jump_size) {
       for (int j = 0-jump_size; j <= jump_size; j++){
-        pixels.setPixelColor(start_pos + i + j, color_from_mode);
+        pixels.setPixelColor((start_pos + i) % NUMPIXELS + j, color_from_mode);
         pixels.setPixelColor(start_pos - i + j, color_from_mode);
       };
 //      pixels.setPixelColor(start_pos - i-3, color_from_mode);
