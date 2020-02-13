@@ -1,46 +1,55 @@
 // Controls the LED's in our entrance hallway
 
 #include <Adafruit_NeoPixel.h>
+// #include <Array.h>
 #define NUMPIXELS 1500
-#define STRIP_PIN    50
+#define STRIP_PIN 50
+
 int jump_size = 10;
+int BRIGHTNESS = 15; // Out of 255
+
+// Init LED strip object?
 Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
 
-int led_pin = 13;                // choose the pin for the LED
+// Define pins being used for data io:
 
-int rob_pir_pin = 31;               // choose the input pin (for PIR sensor)
-int rob_pir_state = LOW;             // we start, assuming no motion detected
-int rob_position = 1400;
-int rob_duration = 5;
+// choose the pin for the debug blinky LED
+int led_pin = 13;                
 
-int front_pir_pin = 42;               // choose the input pin (for PIR sensor)
-int front_pir_state = LOW;             // we start, assuming no motion detected
-int front_position = 1000;
-int front_duration = 2;
+int all_pir_inputs[3][4] = {
+  {12,0,1300,150}, // Input pin, PIR state, Strip position, hold duration
+  {42,0,430,150},
+  {5,0,770,150}
+};
 
+// Where to plug in general on/off switch
 const int switch_pin = 30;
-int switch_state = LOW;
+int switch_state = 0;
 
+// Where to plug in mode cycle button
 const int button_pin = A0;
-const int button_thresh = 950;    
+const int button_thresh = 950; // Sensitivity
 int button_mode = 0;
 
-uint32_t warm_white = pixels.Color(255, 100, 30);
-uint32_t daylight = pixels.Color(200, 200, 200);
+// Setting LED color modes
+uint32_t warm_white = pixels.Color(255, 110, 20);
+uint32_t daylight   = pixels.Color(170, 170, 170);
 
 ////////////////////////////////////////////////////////////
 
 void setup() {
   pinMode(led_pin, OUTPUT);      
   
-  pinMode(rob_pir_pin, INPUT);    
-  pinMode(front_pir_pin, INPUT);  
-  pinMode(switch_pin, INPUT);     
-  pinMode(button_pin, INPUT);    
+  pinMode(all_pir_inputs[0][0], INPUT);    
+  pinMode(all_pir_inputs[1][0], INPUT);  
+  pinMode(all_pir_inputs[2][0], INPUT);     
+  // pinMode(all_pir_inputs[3][0], INPUT);    
+  pinMode(switch_pin, INPUT);
+  pinMode(button_pin, INPUT);
    
   pixels.begin();           // INITIALIZE NeoPixel pixels object (REQUIRED)
   pixels.show();            // Turn OFF all pixels ASAP
-  pixels.setBrightness(15); // Set BRIGHTNESS to about 1/5 (max = 255)
+  pixels.setBrightness(BRIGHTNESS); // Set BRIGHTNESS (max = 255)
   Serial.begin(9600);
 }
 
@@ -49,8 +58,9 @@ void setup() {
 void loop(){
   // Start anew
   Serial.print("\n");
-  Serial.print(millis() % 60000); // Meaningless
-  pixels.clear(); pixels.show();
+  Serial.print(millis() % 60000);
+  pixels.clear(); 
+  pixels.show();
 
   // Read from button
   uint32_t color_from_mode = read_button();
@@ -64,16 +74,15 @@ void loop(){
     flip_the_switch(color_from_mode);
   }
 
-  // Check motion sensor 0
-  rob_pir_state = digitalRead(rob_pir_pin);
-  if (rob_pir_state == HIGH){
-    light_up_and_monitor(rob_pir_pin, rob_position, color_from_mode, rob_duration);
-  }
-
-  // Check motion sensor 1
-  front_pir_state = digitalRead(front_pir_pin);
-  if (front_pir_state == HIGH){
-    light_up_and_monitor(front_pir_pin, front_position, color_from_mode, front_duration);
+  // Check each PIR sensor:
+  for (int i = 0; i < 3; i++) {
+    int pir_pin =               all_pir_inputs[i][0];
+    int pir_state = digitalRead(pir_pin);
+    int pir_position =          all_pir_inputs[i][2];
+    int pir_duration =          all_pir_inputs[i][3];
+    if (pir_state == HIGH){
+      light_up_and_monitor(pir_pin, pir_position, color_from_mode, pir_duration);
+    }
   }
 }
 
@@ -82,17 +91,21 @@ void loop(){
 void light_up_and_monitor(int pir_pin, 
                           int pixel_position, 
                           uint32_t color_from_mode,
-                          int duration){
+                          float duration){
   Serial.println("\n\n"); Serial.print(pir_pin); Serial.print(" IS MOVING\n\n");
   light_up_from(pixel_position, color_from_mode);
-  int trip_event = millis();
+  long trip_event = millis();
   uint32_t current_color = color_from_mode; // Save current color val before loop
-  int now = millis();
+  float now = millis();
+  Serial.println("\n\nTrip Event:"); Serial.print(trip_event);
+  Serial.println("\n\nDuration*1k:"); Serial.print(duration*1000);
   while ((now - trip_event) < (duration * 1000)){
+    Serial.println("\n\nNow: "); Serial.print(now);
+    Serial.println("\n\n");
     color_from_mode = read_button();
     if (current_color != color_from_mode){
       return;
-      }
+    }
     now = millis();
   }
 }
@@ -118,7 +131,6 @@ void flip_the_switch(uint32_t color_from_mode){
     switch_state = read_switch();
   }
   pixels.clear(); pixels.show();
-//  delay(2000);
   return;
 }
 
@@ -133,10 +145,7 @@ uint32_t read_button() {
     average += digitalRead(button_pin);
   }
   average = (average/readings);
-  Serial.print(" | Button average: ");
-  Serial.print(average);
-  Serial.print(" | ");
-  
+
   if (average == HIGH) {
     button_mode += 1;
     button_mode = button_mode % 2;
@@ -176,10 +185,8 @@ void light_up_from(int start_pos, uint32_t color_from_mode){
       for (int j = 0-jump_size; j <= jump_size; j++){
         pixels.setPixelColor((start_pos + i) % NUMPIXELS + j, color_from_mode);
         pixels.setPixelColor(start_pos - i + j, color_from_mode);
-      };
-//      pixels.setPixelColor(start_pos - i-3, color_from_mode);
-//      pixels.setPixelColor(start_pos + i, color_from_mode);
-//      pixels.setPixelColor(start_pos + i+2, color_from_mode);      
+      };      
       pixels.show();
     }
+    return 1;
 }
