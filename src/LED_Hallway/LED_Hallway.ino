@@ -16,10 +16,11 @@ Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
 // choose the pin for the debug blinky LED
 int led_pin = 13;                
 
-int all_pir_inputs[3][4] = {
+int all_pir_inputs[4][4] = {
   {12,0,1300,150}, // Input pin, PIR state, Strip position, hold duration
   {42,0,430,150},
-  {5,0,770,150}
+  {5,0,770,150},
+  {9, 0, 1110, 150}
 };
 
 // Where to plug in general on/off switch
@@ -43,7 +44,7 @@ void setup() {
   pinMode(all_pir_inputs[0][0], INPUT);    
   pinMode(all_pir_inputs[1][0], INPUT);  
   pinMode(all_pir_inputs[2][0], INPUT);     
-  // pinMode(all_pir_inputs[3][0], INPUT);    
+  pinMode(all_pir_inputs[3][0], INPUT);
   pinMode(switch_pin, INPUT);
   pinMode(button_pin, INPUT);
    
@@ -75,7 +76,7 @@ void loop(){
   }
 
   // Check each PIR sensor:
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     int pir_pin =               all_pir_inputs[i][0];
     int pir_state = digitalRead(pir_pin);
     int pir_position =          all_pir_inputs[i][2];
