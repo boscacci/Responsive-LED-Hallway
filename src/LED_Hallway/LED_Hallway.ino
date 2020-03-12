@@ -5,8 +5,9 @@
 #define NUMPIXELS 1500
 #define STRIP_PIN 50
 
+int stay_on_dur = 150;
 int jump_size = 10;
-int BRIGHTNESS = 15; // Out of 255
+int BRIGHTNESS = 50; // Out of 255
 
 // Init LED strip object?
 Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
@@ -14,13 +15,14 @@ Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
 // Define pins being used for data io:
 
 // choose the pin for the debug blinky LED
-int led_pin = 13;                
+int led_pin = 13;
 
 int all_pir_inputs[4][4] = {
-  {12,0,1300,150}, // Input pin, PIR state, Strip position, hold duration
-  {42,0,430,150},
-  {5,0,770,150},
-  {9, 0, 1110, 150}
+  // Input pin, PIR state, Strip position, hold duration
+  {12,0,1300,stay_on_dur}, // Ryan/Erin
+  {42,0,430,stay_on_dur}, // FrontDoor?
+  {5,0,770,stay_on_dur}, // Kitchen?
+  {9, 0, 1110,stay_on_dur} // Bathroom
 };
 
 // Where to plug in general on/off switch
@@ -109,6 +111,10 @@ void light_up_and_monitor(int pir_pin,
     }
     now = millis();
   }
+  pixels.clear(); 
+  pixels.show();
+  Serial.print(" Pause for light reset...\n\n");
+  delay(2000);
 }
 
 ////////////////////////////////////////////////////////////
