@@ -5,9 +5,9 @@
 #define NUMPIXELS 1500
 #define STRIP_PIN 50
 
-int stay_on_dur = 150;
+int stay_on_dur = 5;
 int jump_size = 10;
-int BRIGHTNESS = 50; // Out of 255
+int BRIGHTNESS = 200; // Out of 255
 
 // Init LED strip object?
 Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
@@ -73,8 +73,14 @@ void loop(){
 
   // Read from switch
   switch_state = read_switch();
+  int switch_flipped_off = 1; // Default is switch flipped off
   if (switch_state == HIGH){
-    flip_the_switch(color_from_mode);
+    // But maybe color mode changes while switch is on
+    switch_flipped_off = flip_the_switch(color_from_mode);
+  }
+
+  if (switch_flipped_off == 0){
+    return 0;
   }
 
   // Check each PIR sensor:
@@ -109,6 +115,9 @@ void light_up_and_monitor(int pir_pin,
     if (current_color != color_from_mode){
       return;
     }
+    if (read_switch() == HIGH){
+      return;
+    }
     now = millis();
   }
   pixels.clear(); 
@@ -119,7 +128,7 @@ void light_up_and_monitor(int pir_pin,
 
 ////////////////////////////////////////////////////////////
 
-void flip_the_switch(uint32_t color_from_mode){
+int flip_the_switch(uint32_t color_from_mode){
   
   for (int i = 0; i <= NUMPIXELS; i++) {
     pixels.setPixelColor(i, color_from_mode);
@@ -132,13 +141,13 @@ void flip_the_switch(uint32_t color_from_mode){
   while(switch_state == HIGH){
     color_from_mode = read_button();
     if (current_color != color_from_mode){
-      return;
+      return 0;
     }
     Serial.print("\n");
     switch_state = read_switch();
   }
   pixels.clear(); pixels.show();
-  return;
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////
