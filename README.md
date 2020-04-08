@@ -1,10 +1,13 @@
 # LED Hallway
 
-This takes input from motion sensors, a button, and a switch to activate a series of LED's lining the moulding in our entrance hallway.
+See my [detailed project log here on Medium](https://medium.com/@boscacci/diy-motion-sensing-hallway-leds-wip-825c604d61b8?source=friends_link&sk=c727c7602234de585714f12be69461e3).
 
-The switch turns lights always-on, the button changes the color mode, and the motion sensors activate the lights in like a sequential runway-fashion, from the location of that particular motion sensor, outward.
+Multiple motion sensors trigger addressable RGB LED strips in my apartment's entrance hallway.
 
-An excuse for me to learn how to solder, play with addressable LED strips, and program an Arduino micro-controller
+An excuse for me to learn Arduino micro-controller programming and make fun home automation illumination art!
 
-Project Write-Up:
-https://medium.com/@boscacci/diy-motion-sensing-hall-lighting-825c604d61b8
+<img src="demo1.gif">&#160;&#160;<img src="demo2.gif">
+
+Catherine demonstrates the motion-sensing trigger and color switching capabilities of the system.
+
+A photoresistor monitors ambient brightness to raise and lower the brightness to match the time of day, i.e. it gets dimmer at night so that it doesn't blind my roommates on midnight snack runs.
