@@ -6,7 +6,7 @@ Multiple motion sensors trigger addressable RGB LED strips in my apartment's ent
 
 An excuse for me to learn Arduino micro-controller programming and make fun home automation illumination art!
 
-<img src="demo1.gif">&#160;&#160;<img src="demo2.gif">
+<img src="readme_images/demo1.gif">&#160;&#160;<img src="readme_images/demo2.gif">
 
 Catherine demonstrates the motion-sensing trigger and color switching capabilities of the system.
 
