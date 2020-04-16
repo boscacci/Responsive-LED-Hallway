@@ -1,28 +1,27 @@
-// Controls the LED's in our entrance hallway
-
+// Controls the LEDs in our entrance hallway
 #include <Adafruit_NeoPixel.h>
-// #include <Array.h>
-#define NUMPIXELS 1500
-#define STRIP_PIN 50
+#define NUMPIXELS 1500    // Total number of LEDs in the strips
+#define STRIP_PIN 50      // LED Strip
+#define BRIGHTNESS 120    // out of 255
+const int PHOTO_PIN = A5; // Where to plug in photoresistor
 
-int stay_on_dur = 150;
-int jump_size = 10;
+int stay_on_dur = 150; // Seconds to keep lights on after PIR trip
+int jump_size = 10;    // How many LEDs light up at a time
 
-// Init LED strip object?
+// Init LED strip object from NeoPixel library
 Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
-uint32_t warm_white = pixels.Color(255, 110, 20);
-uint32_t daylight = pixels.Color(170, 170, 170);
+
+// 2 color modes so far
+uint32_t warm_white;
+uint32_t daylight;
 
 int all_pir_inputs[4][4] = {
-    // Input pin, PIR state, Strip position, hold duration
+    // [Input pin, PIR state, Strip position, stay on duration]
     {12, 0, 1300, stay_on_dur}, // Ryan/Erin
     {42, 0, 430, stay_on_dur},  // FrontDoor?
     {5, 0, 770, stay_on_dur},   // Kitchen?
     {9, 0, 1110, stay_on_dur}   // Bathroom
 };
-
-// Where to plug in photoresistor
-const int PHOTO_PIN = A5;
 
 // Where to plug in general on/off switch
 const int switch_pin = 30;
@@ -44,9 +43,9 @@ void setup()
   pinMode(switch_pin, INPUT);
   pinMode(button_pin, INPUT);
   pinMode(PHOTO_PIN, INPUT);
-  pixels.setBrightness(240); // Set BRIGHTNESS (max = 255)
-  pixels.begin();            // INITIALIZE NeoPixel pixels object (REQUIRED)
-  pixels.show();             // Turn OFF all pixels ASAP
+  pixels.setBrightness(BRIGHTNESS); // Set BRIGHTNESS (max = 255)
+  pixels.begin();                   // INITIALIZE NeoPixel pixels object (REQUIRED)
+  pixels.show();                    // Turn OFF all pixels ASAP
   Serial.begin(9600);
 }
 
@@ -55,8 +54,12 @@ void setup()
 float sense_brightness()
 {
   float sensorValue = analogRead(PHOTO_PIN);
-  float brightness = map(sensorValue, 0, 60, 2, 100);
-  return brightness / 100;
+  float AMB = map(sensorValue, 0, 60, 1, 100);
+  if (AMB > 100)
+  {
+    AMB = 100;
+  }
+  return AMB;
 }
 
 ////////////////////////////////////////////////////////////
@@ -71,11 +74,15 @@ void loop()
 
   // Setting LED color modes
   float AMB = sense_brightness();
-  Serial.print("\n\n");
-  Serial.print(AMB);
-  Serial.print("\n\n");
-  warm_white = pixels.Color(255 * AMB, 110 * AMB, 20 * AMB);
-  daylight = pixels.Color(170 * AMB, 170 * AMB, 170 * AMB);
+
+  // Adjust diff colors differently based on ambient brightness
+  float RED = map(AMB, 1, 100, 0, 245);
+  float GREEN = map(AMB, 1, 100, 0, 108);
+  float BLUE = map(AMB, 1, 80, 0, 19);
+  float mult = (AMB / 100) + .01;
+
+  warm_white = pixels.Color(10 + RED, 2 + GREEN, 1 + BLUE);
+  daylight = pixels.Color(170 * mult, 170 * mult, 170 * mult);
 
   // Read from button
   uint32_t color_from_mode = read_button();
@@ -94,6 +101,9 @@ void loop()
 
   if (switch_was_flipped_off == 0)
   {
+    pixels.clear();
+    pixels.show();
+    delay(200);
     return 0;
   }
 
@@ -166,16 +176,12 @@ int flip_the_switch(uint32_t color_from_mode)
   uint32_t current_color = color_from_mode; // Save current color val before loop
   while (switch_state == HIGH)
   {
+    switch_state = read_switch();
     color_from_mode = read_button();
     if (current_color != color_from_mode)
     {
       return 0;
     }
-    Serial.print("\n");
-    switch_state = read_switch();
-    Serial.print("\n\n");
-    Serial.print(analogRead(PHOTO_PIN));
-    Serial.print("\n\n");
   }
   pixels.clear();
   pixels.show();
