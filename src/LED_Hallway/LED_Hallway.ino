@@ -1,11 +1,11 @@
 // Controls the LEDs in our entrance hallway
 #include <Adafruit_NeoPixel.h>
 #define NUMPIXELS 1500    // Total number of LEDs in the strips
-#define STRIP_PIN 50      // LED Strip
+#define STRIP_PIN 50      // LED Strip data
 #define BRIGHTNESS 120    // out of 255
 const int PHOTO_PIN = A5; // Where to plug in photoresistor
 
-int stay_on_dur = 150; // Seconds to keep lights on after PIR trip
+int stay_on_dur = 150; // N seconds to keep lights on after PIR trip
 int jump_size = 10;    // How many LEDs light up at a time
 
 // Init LED strip object from NeoPixel library
@@ -15,8 +15,9 @@ Adafruit_NeoPixel pixels(NUMPIXELS, STRIP_PIN, NEO_GRB + NEO_KHZ800);
 uint32_t warm_white;
 uint32_t daylight;
 
+// Preferences relating to PIR sensors:
+// {Input pin, PIR state, Strip position, stay-on duration}
 int all_pir_inputs[4][4] = {
-    // [Input pin, PIR state, Strip position, stay on duration]
     {12, 0, 1300, stay_on_dur}, // Ryan/Erin
     {42, 0, 430, stay_on_dur},  // FrontDoor?
     {5, 0, 770, stay_on_dur},   // Kitchen?
@@ -27,15 +28,16 @@ int all_pir_inputs[4][4] = {
 const int switch_pin = 30;
 int switch_state = 0;
 
-// Where to plug in mode cycle button
+// Where to plug in mode-cycle button
 const int button_pin = A0;
-const int button_thresh = 950; // Sensitivity
+const int button_thresh = 950; // Button sensitivity
 int button_mode = 0;
 
 ////////////////////////////////////////////////////////////
 
 void setup()
 {
+  // Establish pin modes
   pinMode(all_pir_inputs[0][0], INPUT);
   pinMode(all_pir_inputs[1][0], INPUT);
   pinMode(all_pir_inputs[2][0], INPUT);
@@ -43,15 +45,22 @@ void setup()
   pinMode(switch_pin, INPUT);
   pinMode(button_pin, INPUT);
   pinMode(PHOTO_PIN, INPUT);
-  pixels.setBrightness(BRIGHTNESS); // Set BRIGHTNESS (max = 255)
-  pixels.begin();                   // INITIALIZE NeoPixel pixels object (REQUIRED)
-  pixels.show();                    // Turn OFF all pixels ASAP
+
+  // Set BRIGHTNESS (max = 255)
+  pixels.setBrightness(BRIGHTNESS);
+
+  // INITIALIZE NeoPixel pixels object (REQUIRED)
+  pixels.begin();
+
+  // Turn OFF all pixels first
+  pixels.show();
   Serial.begin(9600);
 }
 
 ////////////////////////////////////////////////////////////
 
 float sense_brightness()
+// Reads the ambient room brightness from the photoresistor
 {
   float sensorValue = analogRead(PHOTO_PIN);
   float AMB = map(sensorValue, 0, 60, 1, 100);
@@ -72,7 +81,7 @@ void loop()
   pixels.clear();
   pixels.show();
 
-  // Setting LED color modes
+  // Read ambient room brightness
   float AMB = sense_brightness();
 
   // Adjust diff colors differently based on ambient brightness
@@ -80,7 +89,6 @@ void loop()
   float GREEN = map(AMB, 1, 100, 0, 108);
   float BLUE = map(AMB, 1, 80, 0, 19);
   float mult = (AMB / 100) + .01;
-
   warm_white = pixels.Color(10 + RED, 2 + GREEN, 1 + BLUE);
   daylight = pixels.Color(170 * mult, 170 * mult, 170 * mult);
 
@@ -100,6 +108,7 @@ void loop()
   }
 
   if (switch_was_flipped_off == 0)
+  // If we're emerging from switched-on state, start loop over again
   {
     pixels.clear();
     pixels.show();
@@ -116,6 +125,7 @@ void loop()
     int pir_duration = all_pir_inputs[i][3];
     if (pir_state == HIGH)
     {
+      // Motion sensor tripped! Fire the LED's!!
       light_up_and_monitor(pir_pin, pir_position, color_from_mode, pir_duration);
     }
   }
@@ -128,17 +138,29 @@ void light_up_and_monitor(int pir_pin,
                           uint32_t color_from_mode,
                           float duration)
 {
+  // Wrapper function to light up LEDs on motion sensor trip and
+  // continue monitoring button/switch state while waiting
   Serial.println("\n\n");
   Serial.print(pir_pin);
   Serial.print(" IS MOVING\n\n");
+
+  // Do the actual lighting up
   light_up_from(pixel_position, color_from_mode);
+
+  // Save the time of PIR activation
   long trip_event = millis();
-  uint32_t current_color = color_from_mode; // Save current color val before loop
+
+  // This one will get updated in while loop
   float now = millis();
+
+  // Save current color val before loop, in case it changes
+  uint32_t current_color = color_from_mode;
+
   Serial.println("\n\nTrip Event:");
   Serial.print(trip_event);
   Serial.println("\n\nDuration*1k:");
   Serial.print(duration * 1000);
+
   while ((now - trip_event) < (duration * 1000))
   {
     Serial.println("\n\nNow: ");
@@ -146,17 +168,22 @@ void light_up_and_monitor(int pir_pin,
     Serial.println("\n\n");
     if (current_color != read_button())
     {
+      // Break loop if the button is pushed
       return;
     }
     if (read_switch() == HIGH)
     {
+      // Break loop if switch is...switched
       return;
     }
+    // Save current time and keep monitoring actuators
     now = millis();
   }
+
   pixels.clear();
   pixels.show();
   Serial.print(" Pause for light reset...\n\n");
+  // Give the photoresistor a sec to settle down
   delay(2000);
 }
 
@@ -164,27 +191,33 @@ void light_up_and_monitor(int pir_pin,
 
 int flip_the_switch(uint32_t color_from_mode)
 {
-
+  // Turn on the lights.
   for (int i = 0; i <= NUMPIXELS; i++)
   {
     pixels.setPixelColor(i, color_from_mode);
   }
   pixels.show();
 
-  Serial.println("\n\nWHOA THERE COWBOY! \nDON'T FORGET TO FLIP THOSE SUCKERS BACK OFF\n");
+  Serial.println("WHOA THERE COWBOY! DON'T FORGET TO FLIP THOSE SUCKERS BACK OFF");
 
-  uint32_t current_color = color_from_mode; // Save current color val before loop
+  // Save current color val before loop
+  uint32_t current_color = color_from_mode;
+
+  // Keep monitoring both actuators until something changes
   while (switch_state == HIGH)
   {
     switch_state = read_switch();
     color_from_mode = read_button();
     if (current_color != color_from_mode)
     {
+      // Break main loop and start over if color has changed
       return 0;
     }
   }
+
   pixels.clear();
   pixels.show();
+  // If color has not changed, continue thru rest of main loop
   return 1;
 }
 
@@ -192,7 +225,7 @@ int flip_the_switch(uint32_t color_from_mode)
 
 uint32_t read_button()
 {
-
+  // Cycles through color modes
   int average = 0;
   int readings = 10;
 
@@ -200,21 +233,22 @@ uint32_t read_button()
   {
     average += digitalRead(button_pin);
   }
+  // This takes the mean of n readings in case it gets weird
   average = (average / readings);
 
   if (average == HIGH)
   {
     button_mode += 1;
-    button_mode = button_mode % 2;
+    button_mode = button_mode % 2; // There are only 2 modes right now
     delay(200);
   }
 
   switch (button_mode)
   {
-  case 0: // Normal
+  case 0: // "Tungsten"
     return (warm_white);
     break;
-  case 1: // your hand is close to the sensor
+  case 1: // 5600k daylight
     return (daylight);
     break;
   }
@@ -224,7 +258,7 @@ uint32_t read_button()
 
 int read_switch()
 {
-
+  // Averages n readings to get a good switch reading
   int average = 0;
   int readings = 10;
 
@@ -242,6 +276,7 @@ int read_switch()
 
 void light_up_from(int start_pos, uint32_t color_from_mode)
 {
+  // Do some mod addition to light up the whole LED circumference in order
   for (int i = 0; i <= NUMPIXELS; i = i + jump_size)
   {
     for (int j = 0 - jump_size; j <= jump_size; j++)
