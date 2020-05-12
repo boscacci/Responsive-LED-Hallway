@@ -1,11 +1,12 @@
 // Controls the LEDs in our entrance hallway
 #include <Adafruit_NeoPixel.h>
-#define NUMPIXELS 1500    // Total number of LEDs in the strips
+
+#define NUMPIXELS 1266    // Total number of LEDs in the strips
 #define STRIP_PIN 50      // LED Strip data
 #define BRIGHTNESS 120    // out of 255
-const int PHOTO_PIN = A5; // Where to plug in photoresistor
+const int PHOTO_PIN = A8; // Where to plug in photoresistor
 
-int stay_on_dur = 150; // N seconds to keep lights on after PIR trip
+int stay_on_dur = 120; // N seconds to keep lights on after PIR trip
 int jump_size = 10;    // How many LEDs light up at a time
 
 // Init LED strip object from NeoPixel library
@@ -18,10 +19,10 @@ uint32_t daylight;
 // Preferences relating to PIR sensors:
 // {Input pin, PIR state, Strip position, stay-on duration}
 int all_pir_inputs[4][4] = {
-    {12, 0, 1300, stay_on_dur}, // Ryan/Erin
-    {42, 0, 430, stay_on_dur},  // FrontDoor?
-    {5, 0, 770, stay_on_dur},   // Kitchen?
-    {9, 0, 1110, stay_on_dur}   // Bathroom
+    {12, 0, 1150, stay_on_dur}, // Ryan/Erin
+    {42, 0, 415, stay_on_dur},  // FrontDoor?
+    {5, 0, 600, stay_on_dur},   // Kitchen?
+    {9, 0, 965, stay_on_dur}    // Bathroom
 };
 
 // Where to plug in general on/off switch
@@ -38,10 +39,10 @@ int button_mode = 0;
 void setup()
 {
   // Establish pin modes
-  pinMode(all_pir_inputs[0][0], INPUT);
-  pinMode(all_pir_inputs[1][0], INPUT);
-  pinMode(all_pir_inputs[2][0], INPUT);
-  pinMode(all_pir_inputs[3][0], INPUT);
+  pinMode(all_pir_inputs[0][0], INPUT_PULLUP);
+  pinMode(all_pir_inputs[1][0], INPUT_PULLUP);
+  pinMode(all_pir_inputs[2][0], INPUT_PULLUP);
+  pinMode(all_pir_inputs[3][0], INPUT_PULLUP);
   pinMode(switch_pin, INPUT);
   pinMode(button_pin, INPUT);
   pinMode(PHOTO_PIN, INPUT);
@@ -63,6 +64,9 @@ float sense_brightness()
 // Reads the ambient room brightness from the photoresistor
 {
   float sensorValue = analogRead(PHOTO_PIN);
+  // Serial.println();
+  // Serial.print("Light sensor: ");
+  // Serial.println(sensorValue);
   float AMB = map(sensorValue, 0, 60, 1, 100);
   if (AMB > 100)
   {
