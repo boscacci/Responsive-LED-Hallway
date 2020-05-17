@@ -12,9 +12,11 @@ extern const long STAY_ON_SECS = 150;  // N seconds to keep lights on after PIR 
 extern const int JUMP_SIZE = 10;       // How many LEDs light up at a time
 
 // Pin Assignments
-extern const int STRIP_PIN = 50; // Data output to LED strip
-extern const int PHOTO_PIN = A8; // Photoresistor GPIO pin; senses brightness
-extern const int IR_PIN = 38;    // IR Remote input
+extern const int STRIP_PIN = 50;   // Data output to LED strip
+extern const int PHOTO_PIN = A8;   // Photoresistor GPIO pin; senses brightness
+extern const int IR_PIN = 38;      // IR Remote input
+extern const int SPEAKER_PIN = 32; // Piezo speaker out
+extern const int SPEAKER_GND = 30; // Piezo speaker ground
 
 // Color Modes
 extern const uint32_t TUNG_0 = strip.Color(120, 30, 30);
