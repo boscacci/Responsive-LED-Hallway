@@ -66,7 +66,6 @@ void taste_the_rainbow()
     currentColorMode = readRemoteIR(currentColorMode);
     if (currentColorMode != "RAINBOW")
     {
-      tone(SPEAKER_PIN, 1000, 100);
       pixels.clear();
       pixels.show();
       return;
@@ -83,7 +82,6 @@ void loop()
 
   if (currentColorMode == "OFF")
   {
-    tone(SPEAKER_PIN, 1000, 100);
     Serial.println("Color mode is OFF.");
     pixels.clear();
     pixels.show();
@@ -92,7 +90,6 @@ void loop()
 
   if (currentColorMode == "RAINBOW")
   {
-    tone(SPEAKER_PIN, 1000, 100);
     Serial.println("Rainbow mode lezgooo.");
     taste_the_rainbow();
     return;
@@ -102,7 +99,6 @@ void loop()
 
   if (currentColorMode == "TUNG_ON")
   {
-    tone(SPEAKER_PIN, 1000, 100);
     if (ambienceLevel < 33)
     {
       Serial.println("Tung on dim!");
@@ -137,7 +133,6 @@ void loop()
 
   if (currentColorMode == "DAY_ON")
   {
-    tone(SPEAKER_PIN, 1000, 100);
     if (ambienceLevel < 33)
     {
       Serial.println("5600k on dim!");
@@ -254,6 +249,7 @@ String readRemoteIR(String currentColorMode)
     return currentColorMode;
   }
   // Otherwise, send updated color mode
+  tone(SPEAKER_PIN, 1000, 100);
   return newColorMode;
 }
 
@@ -314,7 +310,6 @@ void light_up_and_monitor(MotionSensor thisPir, String thisColor)
     String potentiallyNewColor = readRemoteIR(thisColor);
     if (thisColor != potentiallyNewColor)
     {
-      tone(SPEAKER_PIN, 1000, 100);
       currentColorMode = potentiallyNewColor;
       return;
     }
