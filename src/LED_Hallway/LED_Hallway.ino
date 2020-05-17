@@ -1,7 +1,13 @@
-// Controls the LEDs in our entrance hallway
-#include <Adafruit_NeoPixel.h>
+// 3rd Party Libs
+// #include <Adafruit_NeoPixel.h>
+#include <IRremote.h>
+
+// Custom headers
 #include "MotionSensor.h"
 #include "Settings.h"
+
+IRrecv irrecv(IR_PIN); // Make pin SIG for IR diode
+decode_results results;
 
 // Default Color Mode
 String currentColorMode = "OFF";
@@ -28,6 +34,9 @@ void setup()
   // More input pin settings
   pinMode(PHOTO_PIN, INPUT);
 
+  // For IR remote sensor
+  irrecv.enableIRIn();
+
   // Set brightness cap
   pixels.setBrightness(MAX_BRIGHTNESS);
 
@@ -39,10 +48,32 @@ void setup()
   Serial.begin(9600);
 }
 
+void taste_the_rainbow()
+{
+  for (long firstPixelHue = 0; firstPixelHue < 5 * 65536; firstPixelHue += 256)
+  {
+    for (int i = 0; i < pixels.numPixels(); i++)
+    {
+      int pixelHue = firstPixelHue + (i * 65536L / pixels.numPixels());
+      pixels.setPixelColor(i, pixels.gamma32(pixels.ColorHSV(pixelHue)));
+    }
+    pixels.show();
+    currentColorMode = readRemoteIR(currentColorMode);
+    if (currentColorMode != "RAINBOW")
+    {
+      pixels.clear();
+      pixels.show();
+      return;
+    }
+    delay(10);
+  }
+}
+
 void loop()
 {
+  delay(500);
 
-  String currentColorMode = readRemoteIR(currentColorMode);
+  currentColorMode = readRemoteIR(currentColorMode);
 
   if (currentColorMode == "OFF")
   {
@@ -55,24 +86,82 @@ void loop()
   if (currentColorMode == "RAINBOW")
   {
     Serial.println("Rainbow mode lezgooo.");
+    taste_the_rainbow();
     return;
   }
 
+  int ambienceLevel = readRoomAmbience();
+
   if (currentColorMode == "TUNG_ON")
   {
-    Serial.println("TUNG ON!");
-    pixels.fill(TUNGSTEN, 0, NUMPIXELS);
-    pixels.show();
-    return;
+    if (ambienceLevel < 33)
+    {
+      Serial.println("Tung on dim!");
+      pixels.fill(TUNG_0, 0, NUMPIXELS);
+      pixels.show();
+      while (currentColorMode == "TUNG_ON")
+      {
+        currentColorMode = readRemoteIR("TUNG_ON");
+        delay(500);
+      }
+      pixels.clear();
+      pixels.show();
+      delay(200);
+      return;
+    }
+    else
+    {
+      Serial.println("Tung on bright!");
+      pixels.fill(TUNG_1, 0, NUMPIXELS);
+      pixels.show();
+      while (currentColorMode == "TUNG_ON")
+      {
+        currentColorMode = readRemoteIR("TUNG_ON");
+        delay(500);
+      }
+      pixels.clear();
+      pixels.show();
+      delay(200);
+      return;
+    }
   }
 
   if (currentColorMode == "DAY_ON")
   {
-    pixels.fill(DAYLIGHT_1, 0, NUMPIXELS);
-    pixels.show();
-    delay(100);
-    return;
+    if (ambienceLevel < 33)
+    {
+      Serial.println("5600k on dim!");
+      pixels.fill(DAY_0, 0, NUMPIXELS);
+      pixels.show();
+      while (currentColorMode == "DAY_ON")
+      {
+        currentColorMode = readRemoteIR("DAY_ON");
+        delay(500);
+      }
+      pixels.clear();
+      pixels.show();
+      delay(200);
+      return;
+    }
+    else
+    {
+      Serial.println("5600k on bright!");
+      pixels.fill(DAY_1, 0, NUMPIXELS);
+      pixels.show();
+      while (currentColorMode == "DAY_ON")
+      {
+        currentColorMode = readRemoteIR("DAY_ON");
+        delay(500);
+      }
+      pixels.clear();
+      pixels.show();
+      delay(200);
+      return;
+    }
   }
+
+  pixels.clear();
+  pixels.show();
 
   Serial.print("Monitoring Motion Sensors. CurrentColorMode: ");
   Serial.println(currentColorMode);
@@ -89,16 +178,72 @@ void loop()
   }
 }
 
+String hexDecoder(String hexToDecode)
+{
+  if (hexToDecode == "e318261b") // 1 button
+  {
+    Serial.println("Motion-sensing tungsten activated.");
+    return "TUNG_MOTION";
+  }
+  if (hexToDecode == "511dbb") // 2 button
+  {
+    Serial.println("Motion-sensing 5600k activated.");
+    return "DAY_MOTION";
+  }
+  if (hexToDecode == "52a3d41f") // 4 button
+  {
+    Serial.println("Always-on tungsten activated.");
+    return "TUNG_ON";
+  }
+  if (hexToDecode == "d7e84b1b") // 5 button
+  {
+    Serial.println("Always-on 5600k activated.");
+    return "DAY_ON";
+  }
+  if (hexToDecode == "f076c13b") // 7 button
+  {
+    Serial.println("Trippy mode activated.");
+    return "RAINBOW";
+  }
+  if (hexToDecode == "97483bfb") // zero button
+  {
+    Serial.println("Always-off mode activated.");
+    return "OFF";
+  }
+  Serial.print("hexDecoder received invalid value: ");
+  Serial.println(hexToDecode);
+  return "ERROR";
+}
+
 String readRemoteIR(String currentColorMode)
 {
-  // if (no signal from remote){
-  //   return currentColorMode;
-  // }
+  String resultString = "";
 
-  // !TODO This should actually read from IR remote:
-  // Right now it just returns an arbitrary value
-  String newColorMode = "TUNG_MOTION";
+  // If we get a signal,
+  if (irrecv.decode(&results))
+  {
+    // Save it for decoding
+    resultString = String(results.value, HEX);
+    Serial.print("Result string from readRemoteIR: ");
+    Serial.println(resultString);
+    irrecv.resume();
+  }
+  else
+  {
+    // If we don't get a signal, return old mode
+    return currentColorMode;
+  }
 
+  // If we got a signal, decode it:
+  String newColorMode = hexDecoder(resultString);
+
+  // If it doesn't decode well,
+  if (newColorMode == "ERROR")
+  {
+    // Give back the input value
+    return currentColorMode;
+  }
+  // Otherwise, send updated color mode
   return newColorMode;
 }
 
@@ -113,7 +258,18 @@ void light_up_and_monitor(MotionSensor thisPir, String thisColor)
   // Do the actual lighting up
   if (thisColor == "TUNG_MOTION")
   {
-    light_up_from(thisPir.position, TUNGSTEN);
+    if (ambienceLevel < 33)
+    {
+      Serial.print("Brightness level: ");
+      Serial.println("< 33");
+      light_up_from(thisPir.position, TUNG_0);
+    }
+    else
+    {
+      Serial.print("Brightness level: ");
+      Serial.println(">= 33");
+      light_up_from(thisPir.position, TUNG_1);
+    }
   }
 
   if (thisColor == "DAY_MOTION")
@@ -122,13 +278,13 @@ void light_up_and_monitor(MotionSensor thisPir, String thisColor)
     {
       Serial.print("Brightness level: ");
       Serial.println("< 33");
-      light_up_from(thisPir.position, DAYLIGHT_0);
+      light_up_from(thisPir.position, DAY_0);
     }
     else
     {
       Serial.print("Brightness level: ");
       Serial.println(">= 33");
-      light_up_from(thisPir.position, DAYLIGHT_1);
+      light_up_from(thisPir.position, DAY_1);
     }
   }
 
@@ -141,12 +297,14 @@ void light_up_and_monitor(MotionSensor thisPir, String thisColor)
   while ((now - trip_event) < (STAY_ON_SECS * 1000))
   {
     Serial.println();
-    Serial.print("Now: ");
-    Serial.println(now);
+    Serial.print("Seconds remaining: ");
+    Serial.println(((STAY_ON_SECS * 1000) - (now - trip_event)) / 1000);
 
     // Break loop if the button is pushed
-    if (thisColor != readRemoteIR(thisColor))
+    String potentiallyNewColor = readRemoteIR(thisColor);
+    if (thisColor != potentiallyNewColor)
     {
+      currentColorMode = potentiallyNewColor;
       return;
     }
 

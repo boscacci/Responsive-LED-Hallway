@@ -14,8 +14,10 @@ extern const int JUMP_SIZE = 10;       // How many LEDs light up at a time
 // Pin Assignments
 extern const int STRIP_PIN = 50; // Data output to LED strip
 extern const int PHOTO_PIN = A8; // Photoresistor GPIO pin; senses brightness
+extern const int IR_PIN = 38;    // IR Remote input
 
 // Color Modes
-extern const uint32_t TUNGSTEN = strip.Color(150, 20, 20);
-extern const uint32_t DAYLIGHT_0 = strip.Color(50, 50, 60);
-extern const uint32_t DAYLIGHT_1 = strip.Color(145, 145, 155);
+extern const uint32_t TUNG_0 = strip.Color(120, 30, 30);
+extern const uint32_t TUNG_1 = strip.Color(180, 100, 50);
+extern const uint32_t DAY_0 = strip.Color(50, 50, 60);
+extern const uint32_t DAY_1 = strip.Color(145, 145, 155);
