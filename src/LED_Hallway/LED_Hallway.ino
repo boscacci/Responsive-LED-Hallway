@@ -53,27 +53,6 @@ void setup()
   Serial.begin(9600);
 }
 
-void taste_the_rainbow()
-{
-  for (long firstPixelHue = 0; firstPixelHue < 5 * 65536; firstPixelHue += 256)
-  {
-    for (int i = 0; i < pixels.numPixels(); i++)
-    {
-      int pixelHue = firstPixelHue + (i * 65536L / pixels.numPixels());
-      pixels.setPixelColor(i, pixels.gamma32(pixels.ColorHSV(pixelHue)));
-    }
-    pixels.show();
-    currentColorMode = readRemoteIR(currentColorMode);
-    if (currentColorMode != "RAINBOW")
-    {
-      pixels.clear();
-      pixels.show();
-      return;
-    }
-    delay(10);
-  }
-}
-
 void loop()
 {
   delay(500);
@@ -177,8 +156,12 @@ void loop()
     int pir_state = digitalRead((allMotionSensors[i]).pinAssignment);
     if (pir_state == HIGH)
     {
-      // Motion sensor tripped! Fire the LED's!!
-      light_up_and_monitor(allMotionSensors[i], currentColorMode);
+      // Check again for safety:
+      if (digitalRead((allMotionSensors[i]).pinAssignment))
+      {
+        // Motion sensor tripped! Fire the LED's!!
+        light_up_and_monitor(allMotionSensors[i], currentColorMode);
+      }
     }
   }
 }
@@ -218,6 +201,27 @@ String hexDecoder(String hexToDecode)
   Serial.print("hexDecoder received invalid value: ");
   Serial.println(hexToDecode);
   return "ERROR";
+}
+
+void taste_the_rainbow()
+{
+  for (long firstPixelHue = 0; firstPixelHue < 5 * 65536; firstPixelHue += 256)
+  {
+    for (int i = 0; i < pixels.numPixels(); i++)
+    {
+      int pixelHue = firstPixelHue + (i * 65536L / pixels.numPixels());
+      pixels.setPixelColor(i, pixels.gamma32(pixels.ColorHSV(pixelHue)));
+    }
+    pixels.show();
+    currentColorMode = readRemoteIR(currentColorMode);
+    if (currentColorMode != "RAINBOW")
+    {
+      pixels.clear();
+      pixels.show();
+      return;
+    }
+    delay(10);
+  }
 }
 
 String readRemoteIR(String currentColorMode)
@@ -307,10 +311,9 @@ void light_up_and_monitor(MotionSensor thisPir, String thisColor)
     Serial.println(((STAY_ON_SECS * 1000) - (now - trip_event)) / 1000);
 
     // Break loop if the button is pushed
-    String potentiallyNewColor = readRemoteIR(thisColor);
-    if (thisColor != potentiallyNewColor)
+    currentColorMode = readRemoteIR(thisColor);
+    if (thisColor != currentColorMode)
     {
-      currentColorMode = potentiallyNewColor;
       return;
     }
 

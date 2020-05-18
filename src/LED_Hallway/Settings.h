@@ -19,7 +19,7 @@ extern const int SPEAKER_PIN = 32; // Piezo speaker out
 extern const int SPEAKER_GND = 30; // Piezo speaker ground
 
 // Color Modes
-extern const uint32_t TUNG_0 = strip.Color(120, 30, 30);
-extern const uint32_t TUNG_1 = strip.Color(180, 100, 50);
+extern const uint32_t TUNG_0 = strip.Color(40, 15, 5);
+extern const uint32_t TUNG_1 = strip.Color(200, 75, 12);
 extern const uint32_t DAY_0 = strip.Color(50, 50, 60);
-extern const uint32_t DAY_1 = strip.Color(145, 145, 155);
+extern const uint32_t DAY_1 = strip.Color(220, 190, 200);
