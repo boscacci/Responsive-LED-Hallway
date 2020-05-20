@@ -1,5 +1,4 @@
 // 3rd Party Libs
-// #include <Adafruit_NeoPixel.h>
 #include <IRremote.h>
 
 // Custom headers
