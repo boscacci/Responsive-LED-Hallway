@@ -9,13 +9,10 @@
 IRrecv irrecv(IR_PIN); // Make pin SIG for IR diode
 decode_results results;
 
-// Default Color Mode
-String currentColorMode = "OFF";
-
 // Init Motion Sensor Objects
 MotionSensor RyanErinSensor(1150, 12);
-MotionSensor FrontDoorSensor(415, 42);
-MotionSensor KitchenSensor(600, 5);
+MotionSensor FrontDoorSensor(390, 42);
+MotionSensor KitchenSensor(760, 5);
 MotionSensor BathroomSensor(965, 9);
 
 // List of all motion sensors
@@ -78,7 +75,7 @@ void loop()
 
   if (currentColorMode == "TUNG_ON")
   {
-    if (ambienceLevel < 33)
+    if (ambienceLevel < NIGHT_LIGHT_THRESHOLD)
     {
       Serial.println("Tung on dim!");
       pixels.fill(TUNG_0, 0, NUMPIXELS);
@@ -112,7 +109,7 @@ void loop()
 
   if (currentColorMode == "DAY_ON")
   {
-    if (ambienceLevel < 33)
+    if (ambienceLevel < NIGHT_LIGHT_THRESHOLD)
     {
       Serial.println("5600k on dim!");
       pixels.fill(DAY_0, 0, NUMPIXELS);
@@ -160,6 +157,10 @@ void loop()
       if (digitalRead((allMotionSensors[i]).pinAssignment))
       {
         // Motion sensor tripped! Fire the LED's!!
+        if (allMotionSensors[i].pinAssignment == 42 | allMotionSensors[i].pinAssignment == 12)
+        {
+          delay(500);
+        }
         light_up_and_monitor(allMotionSensors[i], currentColorMode);
       }
     }
@@ -233,8 +234,6 @@ String readRemoteIR(String currentColorMode)
   {
     // Save it for decoding
     resultString = String(results.value, HEX);
-    Serial.print("Result string from readRemoteIR: ");
-    Serial.println(resultString);
     irrecv.resume();
   }
   else
@@ -268,32 +267,24 @@ void light_up_and_monitor(MotionSensor thisPir, String thisColor)
   // Do the actual lighting up
   if (thisColor == "TUNG_MOTION")
   {
-    if (ambienceLevel < 33)
+    if (ambienceLevel < NIGHT_LIGHT_THRESHOLD)
     {
-      Serial.print("Brightness level: ");
-      Serial.println("< 33");
       light_up_from(thisPir.position, TUNG_0);
     }
     else
     {
-      Serial.print("Brightness level: ");
-      Serial.println(">= 33");
       light_up_from(thisPir.position, TUNG_1);
     }
   }
 
   if (thisColor == "DAY_MOTION")
   {
-    if (ambienceLevel < 33)
+    if (ambienceLevel < NIGHT_LIGHT_THRESHOLD)
     {
-      Serial.print("Brightness level: ");
-      Serial.println("< 33");
       light_up_from(thisPir.position, DAY_0);
     }
     else
     {
-      Serial.print("Brightness level: ");
-      Serial.println(">= 33");
       light_up_from(thisPir.position, DAY_1);
     }
   }
@@ -314,7 +305,7 @@ void light_up_and_monitor(MotionSensor thisPir, String thisColor)
     currentColorMode = readRemoteIR(thisColor);
     if (thisColor != currentColorMode)
     {
-      return;
+      break;
     }
 
     // Save current time and keep monitoring remote
@@ -336,7 +327,12 @@ void light_up_from(int start_pos, uint32_t color_from_mode)
     for (int j = 0 - JUMP_SIZE; j <= JUMP_SIZE; j++)
     {
       pixels.setPixelColor((start_pos + i) % NUMPIXELS + j, color_from_mode);
-      pixels.setPixelColor(start_pos - i + j, color_from_mode);
+      int left_side = start_pos - i;
+      if (left_side < 0)
+      {
+        left_side += 1267;
+      }
+      pixels.setPixelColor(left_side + j, color_from_mode);
     };
     pixels.show();
   }
@@ -347,13 +343,7 @@ float readRoomAmbience()
 // Reads ambient room brightness from photoresistor
 {
   float sensorValue = analogRead(PHOTO_PIN);
-  // Serial.println();
-  // Serial.print("Light sensor: ");
-  // Serial.println(sensorValue);
-  float ambienceLevel = map(sensorValue, 0, 60, 1, 100);
-  if (ambienceLevel > 100)
-  {
-    ambienceLevel = 100;
-  }
-  return ambienceLevel;
+  Serial.print(" // Light sensor raw value: ");
+  Serial.print(sensorValue);
+  return sensorValue;
 }

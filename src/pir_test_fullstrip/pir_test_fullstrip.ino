@@ -16,6 +16,7 @@ void setup()
   pinMode(RYANERIN, INPUT_PULLUP);
   pinMode(FRONTDOOR, INPUT_PULLUP);
   strip.begin();
+  strip.clear();
   strip.show(); // Initialize all pixels to 'off'
   Serial.begin(9600);
 }
@@ -61,6 +62,20 @@ void loop()
   {
     strip.fill(darkness, 1100, 100);
     strip.show();
-    Serial.println(" Ryanerin: 0");
+    Serial.print(" Ryanerin: 0");
+  }
+
+  // KITCHEN
+  if (digitalRead(KITCHEN))
+  {
+    strip.fill(magenta, 700, 100);
+    strip.show();
+    Serial.println(" Kitchen: 1");
+  }
+  else
+  {
+    strip.fill(darkness, 700, 100);
+    strip.show();
+    Serial.println(" Kitchen: 0");
   }
 }
