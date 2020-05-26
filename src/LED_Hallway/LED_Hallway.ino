@@ -342,7 +342,8 @@ float readRoomAmbience()
 // Reads ambient room brightness from photoresistor
 {
   float sensorValue = analogRead(PHOTO_PIN);
-  Serial.print(" // Light sensor raw value: ");
+  Serial.print("Light sensor raw value: ");
   Serial.print(sensorValue);
+  Serial.print(" ");
   return sensorValue;
 }

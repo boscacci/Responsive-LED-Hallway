@@ -26,4 +26,4 @@ extern const uint32_t TUNG_0 = strip.Color(28, 14, 3);
 extern const uint32_t TUNG_1 = strip.Color(215, 95, 15);
 extern const uint32_t DAY_0 = strip.Color(50, 50, 60);
 extern const uint32_t DAY_1 = strip.Color(167, 215, 198);
-extern const int NIGHT_LIGHT_THRESHOLD = 20;
+extern const int NIGHT_LIGHT_THRESHOLD = 17;
